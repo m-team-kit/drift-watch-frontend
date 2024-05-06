@@ -29,6 +29,7 @@ RUN python -m pip install -r requirements.txt
 
 # Copy the rest of the application
 COPY --chown=sid:sid drift_run_dashboard.py /srv
+COPY --chown=sid:sid .env /srv
 
 # Change to non root user and expose port
 USER sid
