@@ -19,42 +19,36 @@ RUN python -m pip install --upgrade pip
 WORKDIR /srv
 RUN useradd -m sid
 
+# Copy and install production requirements
+COPY --chown=sid:sid app /srv/app
+COPY --chown=sid:sid requirements.txt /srv
+COPY --chown=sid:sid dashboard.py /srv
+RUN python -m pip install -r requirements.txt
+
 # ================================= PRODUCTION =================================
 FROM build AS production
 USER root
 
-# Copy and install production requirements
-COPY --chown=sid:sid requirements.txt /srv
-RUN python -m pip install -r requirements.txt
-
-# Copy the rest of the application
-COPY --chown=sid:sid drift_run_dashboard.py /srv
-COPY --chown=sid:sid .env /srv
-
 # Change to non root user and expose port
 USER sid
-EXPOSE 8000
 EXPOSE 8501
 
 # Define entrypoint and default command
-# ENTRYPOINT [ "python" ]
-CMD [ "streamlit", "run", "drift_run_dashboard.py" ]
+ENTRYPOINT [ "python", "-m", "streamlit" ]
+CMD [ "run", "dashboard.py" ]
 
 # ================================= DEVELOPMENT ================================
-FROM production AS development
+FROM build AS development
 USER root
 
-# Copy and install development requirements
-COPY --chown=sid:sid requirements-dev.txt /srv
-RUN python -m pip install -r requirements-dev.txt
+# Copy and install debugger requirements
+RUN pip install debugpy
 
 # Change to non root user and expose port
 USER sid
 EXPOSE 8501
 EXPOSE 5678
-EXPOSE 8000
 
 # Define entrypoint and default command
-# ENTRYPOINT ["python", "-Xfrozen_modules=off", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client" ]
-# ENTRYPOINT [ "python" ]
-CMD [ "streamlit", "run", "drift_run_dashboard.py" ]
+ENTRYPOINT ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m", "streamlit" ]
+CMD [ "run", "dashboard.py" ]
