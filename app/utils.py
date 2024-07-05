@@ -5,7 +5,8 @@ from collections import ChainMap
 import requests
 from app import queries
 from app.config import monitoring_url, settings
-
+import base64
+import json
 
 def fetch_uncompleted(start_datetime, end_datetime):
     """Fetch all uncompleted jobs based on the selected date and time."""
@@ -43,13 +44,42 @@ def fetch_drifts(start_datetime, end_datetime, data=True, concept=True):
         timeout=settings.DRIFT_MONITOR_TIMEOUT,
     )
     response.raise_for_status()
-    return [
-        {
-            "id": job.get("id", "Missing ID"),
-            "job_status": job.get("job_status", "No status found"),
-            "datetime": job.get("datetime", "Missing datetime"),
-            "data_drift": job["data_drift"].get("parameters", None),
-            "concept_drift": job["concept_drift"].get("parameters", None),
-        }
-        for job in response.json()
-    ]
+
+    json_data = json.loads(response.text)
+ 
+    data_array = []
+
+    for item in json_data:
+        parameters = item["data_drift"]["parameters"]
+
+        
+        # if image exists, extract the encoded image data from the JSON response
+        if item['data_drift']['parameters'].get('MMD_statistic_image', None):
+            encoded_MMD_statistic_image = item['data_drift']['parameters']['MMD_statistic_image']
+            # Decode the base64-encoded image data to binary
+            MMD_statistic_image = base64.b64decode(encoded_MMD_statistic_image)
+
+        else:
+            MMD_statistic_image = None
+        
+
+        # Extract the encoded image data from the JSON response
+        if item['data_drift']['parameters'].get('data_distribution_image', None):
+            encoded_data_distribution_image = item['data_drift']['parameters']['data_distribution_image']
+            # Decode the base64-encoded image data to binary
+            data_distribution_image = base64.b64decode(encoded_data_distribution_image)
+        else:
+            data_distribution_image = None
+
+        data_array.append({
+            "drift_run_id": item["id"],
+            "Experiment_time": item["datetime"],
+            "data_drift": item["data_drift"]["drift"],
+            "concept_drift": item["concept_drift"]["drift"],
+            "parameters": parameters,
+            "MMD_statistic_image" : MMD_statistic_image,
+            "data_distribution_image": data_distribution_image
+    })
+
+
+    return data_array
