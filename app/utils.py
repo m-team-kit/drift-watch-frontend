@@ -20,11 +20,14 @@ def fetch_uncompleted(start_datetime, end_datetime):
         timeout=settings.DRIFT_MONITOR_TIMEOUT,
     )
     response.raise_for_status()
+    
+    
+    
     return [
         {
-            "id": job.get("id", "Missing ID"),
-            "job_status": job.get("job_status", "No status found"),
-            "datetime": job.get("datetime", "Missing datetime"),
+            "Experiment_id": job.get("id", "Missing ID"),
+            "Job_status": job.get("job_status", "No status found"),
+            "Experiment_time": job.get("datetime", "Missing datetime"),
         }
         for job in response.json()
     ]
@@ -44,14 +47,15 @@ def fetch_drifts(start_datetime, end_datetime, data=True, concept=True):
         timeout=settings.DRIFT_MONITOR_TIMEOUT,
     )
     response.raise_for_status()
+    
 
     json_data = json.loads(response.text)
  
-    data_array = []
-
+    data_array = []    
     for item in json_data:
-        parameters = item["data_drift"]["parameters"]
+        data_drift_parameters = item["data_drift"]["parameters"]
 
+        concept_drift_parameters = item["concept_drift"]["parameters"]
         
         # if image exists, extract the encoded image data from the JSON response
         if item['data_drift']['parameters'].get('MMD_statistic_image', None):
@@ -76,7 +80,8 @@ def fetch_drifts(start_datetime, end_datetime, data=True, concept=True):
             "Experiment_time": item["datetime"],
             "data_drift": item["data_drift"]["drift"],
             "concept_drift": item["concept_drift"]["drift"],
-            "parameters": parameters,
+            "concept_drift_parameters" : concept_drift_parameters,
+            "data_drift_parameters": data_drift_parameters,            
             "MMD_statistic_image" : MMD_statistic_image,
             "data_distribution_image": data_distribution_image
     })
