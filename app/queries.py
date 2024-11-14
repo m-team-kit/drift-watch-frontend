@@ -3,7 +3,7 @@
 
 def datetime(start=None, end=None):
     """Return the query for the selected date and time."""
-    return {"datetime": {"$gte": start, "$lte": end}}
+    return {"created_at": {"$gte": start, "$lte": end}}
 
 
 def job_status(status=None):

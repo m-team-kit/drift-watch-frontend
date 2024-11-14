@@ -8,17 +8,13 @@
 
 ## Usage
 
-
-
 ### 1. Configuration
 
-    - Create a .env file inside the github repo and ensure that you have the necessary credentials configured in the `.env` file inside the repo. This file should contain the following variables:
-    
-    monitoring_url = The base URL for accessing drift detection API endpoints.
-    
-    for example, on localhost it would look something like this: 
-    
-    monitoring_url = http://0.0.0.0:5000
+    - In .streamlit folder, add your AUTH_TOKEN inside secrets.toml file, it is required to access the API's
+        e.g. 
+        
+        AUTH_TOKEN = "YOUR ACCESS TOKEN"
+
 
 ### 2. Building the Docker Image
 
