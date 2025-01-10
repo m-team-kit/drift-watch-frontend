@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from typing import List, Dict, Tuple
 from datetime import datetime, time
+
 def styled_button(label: str, key: str = None) -> bool:
     """
     Display a styled Streamlit button with custom CSS.
@@ -133,9 +134,7 @@ def extract_drift_run_parameters(df: pd.DataFrame) -> Tuple[List[Dict], set]:
     features = set()
     for _, row in df.iterrows():
         # Extract parameters from both data_drift and concept_drift
-        data_drift_params = row.get("data_drift", {}).get("parameters", {})
-        concept_drift_params = row.get("concept_drift", {}).get("parameters", {})
-        params = {**data_drift_params, **concept_drift_params}
+        params = row.get("parameters", {})
         drift_parameters_list.append(params)
         features.update(params.keys())
     return drift_parameters_list, features
@@ -158,75 +157,146 @@ def display_graphs(df: pd.DataFrame, drift_parameters_list: List[Dict], features
             st.warning("Please select at least one feature.")
     else:
         st.info("No drift parameters available to display.")
+from typing import List, Dict
+import pandas as pd
+import streamlit as st
+from typing import List, Dict
+import pandas as pd
+import streamlit as st
 
-def display_experiment_table(experiments: List[Dict], permissions: Dict[str, bool]):
+import streamlit as st
+import pandas as pd
+from typing import List, Dict
+import streamlit as st
+import pandas as pd
+from typing import List, Dict
+
+def display_experiment_table(experiments: List[Dict], api_client):
+    # Inject custom CSS for table borders
+    # Inject custom CSS for table borders
+
+    # Inject custom CSS for table borders with column separators
+    # Inject custom CSS for table borders with column separators
+    st.markdown("""
+    <style>
+    .table-container {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .table-header, .table-row {
+        display: grid;
+        grid-template-columns: 2fr 4fr 3fr 1fr; /* Adjust column widths */
+        width: 100%;
+        border: 1px solid #ddd;
+    }
+    .table-header div, .table-row div {
+        padding: 8px;
+        border-right: 1px solid #ddd; /* Add column separator */
+        text-align: left;
+    }
+    .table-header div:last-child, .table-row div:last-child {
+        border-right: none; /* Remove the right border for the last column */
+    }
+    .table-header {
+        background-color: #f2f2f2;
+        font-weight: bold;
+        border-bottom: 2px solid #ddd; /* Distinct bottom border for the header */
+    }
+    .table-row {
+        background-color: #fff;
+    }
+    .table-row:hover {
+        background-color: #f9f9f9; /* Add hover effect for rows */
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+
     st.markdown("<h2 style='text-align: left;'>Completed Jobs</h2>", unsafe_allow_html=True)
-    
-    # Add margin between the search input and the table header
-    st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
- 
-    # Consolidated CSS for table with centered header
-    st.markdown(
-        """
-        <style>
-        .experiment-table {
-            width: 300px; /* Set the width to match buttons */
-            border-collapse: collapse;
-        }
-        .experiment-table th {
-            padding: 12px;
-            text-align: center; /* Center-align header text */
-            background-color: #f5f7fa;
-            color: #333;
-            font-weight: bold;
-        }
-        .experiment-table td {
-            padding: 12px;
-            text-align: left;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
 
     # Search functionality
-    search_query = st.text_input("Search experiments", "")
-    filtered_experiments = [exp for exp in experiments if search_query.lower() in exp.get("name", "").lower()]
+    search_text = st.text_input("Search experiments", "")
 
-    # Add space between search input and table header
-    st.markdown(
-        """
-        <div style="margin-top: 20px;"></div>
-        """,
-        unsafe_allow_html=True
-    )
+    # Fetch filtered experiments
+    experiments = api_client.get_experiments(search_text)
 
-    # Display the experiments in a table format with a centered header
-    st.markdown(
-        """
-        <table class='experiment-table'>
-            <tr><th>All Experiments</th></tr>
-        """,
-        unsafe_allow_html=True
-    )
-    
-    if not filtered_experiments:
-        st.warning('No experiment found')
-        
-    for exp in filtered_experiments:
-        exp_name = exp.get("name", "")
-        exp_id = exp.get("id", "")
-        
-        # Check if the user has permission to view the experiment
-        has_permission = permissions.get(exp_id, False)
-        
-        # Create a unique key for each button
-        button_key = f"exp_{exp_id}"
-        
-        # Display experiment name as a button in table row format
-        if styled_button(exp_name, key=button_key):
-            # Set query params with experiment ID on button click
-            st.session_state.query_params = {"experiment_id": exp_id, "has_permission": has_permission, "exp_name": exp_name}
+    # Handle pagination initialization
+    if "current_page" not in st.session_state:
+        st.session_state.current_page = 1
+
+    # Define pagination settings
+    items_per_page = 5
+    total_pages = len(experiments) // items_per_page + (len(experiments) % items_per_page > 0)
+
+    # Calculate start and end indices for the current page
+    start_idx = (st.session_state.current_page - 1) * items_per_page
+    end_idx = start_idx + items_per_page
+
+    # Get current page data
+    current_page_experiments = experiments[start_idx:end_idx]
+
+    if current_page_experiments:
+        # Table Container
+        with st.container():
+            # Display table headers
+            st.markdown('<div class="table-header">', unsafe_allow_html=True)
+            col1, col2, col3, col4 = st.columns([2, 4, 3, 1])
+            with col1:
+                st.markdown("**Name**")
+            with col2:
+                st.markdown("**Description**")
+            with col3:
+                st.markdown("**Created At**")
+            with col4:
+                st.markdown("**Select**")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # Display each experiment row
+            for experiment in current_page_experiments:
+                st.markdown('<div class="table-row">', unsafe_allow_html=True)
+                row1, row2, row3, row4 = st.columns([2, 4, 3, 1])
+
+                # Name with clickable link
+                experiment_name = f"{experiment['name']}"
+                row1.markdown(experiment_name, unsafe_allow_html=True)
+
+                # Description
+                row2.markdown(experiment.get('description', 'N/A'))
+
+                # Created At
+                row3.markdown(experiment.get('created_at', 'N/A'))
+
+                # Select Button
+                select_key = f"select_{experiment['id']}"
+                if row4.button("Select", key=select_key):
+                    st.session_state["query_params"] = {"experiment_id": experiment['id']}
+                    st.rerun()
+
+                st.markdown('</div>', unsafe_allow_html=True)
+
+        # Optional: Display selected experiment
+        query_params = st.session_state.get("query_params", {})
+        if "experiment_id" in query_params:
+            experiment_id = query_params["experiment_id"]
+            st.success(f"Selected Experiment ID: {experiment_id}")
+           
+    else:
+        st.warning("No experiments found")
+
+    # Pagination controls
+    col_prev, col_info, col_next = st.columns([1, 2, 1])
+    with col_prev:
+        if st.button("Previous") and st.session_state.current_page > 1:
+            st.session_state.current_page -= 1
             st.rerun()
-    
-    st.markdown("</table>", unsafe_allow_html=True)
+    with col_next:
+        if st.button("Next") and st.session_state.current_page < total_pages:
+            st.session_state.current_page += 1
+            st.rerun()
+
+    # Display current page info in the center column
+    with col_info:
+        st.write(f"Page {st.session_state.current_page} of {total_pages}")
+        st.write(f"Showing {len(current_page_experiments)} items out of {len(experiments)} total.")
+

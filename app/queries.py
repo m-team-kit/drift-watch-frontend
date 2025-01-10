@@ -13,11 +13,8 @@ def job_status(status=None):
     return {"job_status": status}
 
 
-def data_drift(drift=None):
-    """Return the query for the selected data drift."""
-    return {"data_drift.drift": drift}
-
-
-def concept_drift(drift=None):
-    """Return the query for the selected concept drift."""
-    return {"concept_drift.drift": drift}
+def tags_contains(tags=None):
+    """Construct the query to check if 'tags' field contains any of the specified value."""
+    if not isinstance(tags, list):
+        return {"tags" : {"$in": tags}}
+    return {"tags" : tags} 

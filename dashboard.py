@@ -5,11 +5,9 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),  'app')))
 
 import streamlit as st
-import datetime
 import pandas as pd
 from app.api_client import APIClient
 from typing import List, Dict
-from app.permissions import PermissionManager
 from app.ui_components import (    
     date_time_inputs,
     drift_type_inputs,    
@@ -48,8 +46,8 @@ def fetch_data(api_client: APIClient):
     Returns:
         Tuple: Entitlement data and experiment data retrieved from the API.
     """
-    entitlements_data = api_client.get_entitlements()
-    experiments_data = api_client.get_experiments()
+    entitlements_data = api_client.get_entitlements()    
+    experiments_data = api_client.get_experiments()    
     return entitlements_data, experiments_data
 
 def display_uncompleted_jobs(api_client: APIClient, experiments_data: List[Dict]):
@@ -105,7 +103,7 @@ def display_uncompleted_jobs(api_client: APIClient, experiments_data: List[Dict]
         st.info("No jobs found within the selected date and time range.")
 
 
-def display_completed_experiment(api_client: APIClient, experiments_data: List[Dict], permission_manager: PermissionManager):
+def display_completed_experiment(api_client: APIClient, experiments_data: List[Dict]):
     """
     Display completed jobs and their corresponding runs, either by showing the experiment list or detailed runs.
     
@@ -117,14 +115,13 @@ def display_completed_experiment(api_client: APIClient, experiments_data: List[D
     query_params = st.session_state.get("query_params", {})
     if "experiment_id" in query_params:
         # If an experiment is selected, display the runs associated with that experiment
-        experiment_id = query_params["experiment_id"]
-        has_permission = query_params.get("has_permission", False)
-        display_experiment_runs(api_client, experiments_data, experiment_id, has_permission)
+        experiment_id = query_params["experiment_id"]        
+        display_experiment_runs(api_client, experiments_data, experiment_id)
     else:
         # If no experiment is selected, display the experiments list with search functionality
-        display_experiment_table(experiments_data, permission_manager.permissions)
+        display_experiment_table(experiments_data, api_client)
 
-def display_experiment_runs(api_client: APIClient, experiments_data: List[Dict], experiment_id: str, has_permission: bool):
+def display_experiment_runs(api_client: APIClient, experiments_data: List[Dict], experiment_id: str):
     """
     Display the runs for a specific experiment, allowing the user to filter by date and drift type.
     
@@ -144,17 +141,31 @@ def display_experiment_runs(api_client: APIClient, experiments_data: List[Dict],
     if not experiment:
         st.error("Experiment not found.")
         return
-
-    # If the user does not have permission to view the experiment, display an error message
-    if not has_permission:
-        required_entitlements = list(experiment.get("permissions", {}).keys())
-        error_message = f"""
-        <div style="color: red; background-color: #fdd; padding: 10px; border-radius: 5px;">
-            You do not have access to this experiment.<br>You are required to be the part of entitlement/group:<br>{'<br>'.join(required_entitlements)}
-        </div>
-        """
-        st.markdown(error_message, unsafe_allow_html=True)
-        return
+    
+    # # If the user does not have permission to view the experiment, display an error message
+    # if not has_permission:
+    #     # Get the permissions from the experiment
+    #     required_entitlements = experiment.get("permissions", [])
+        
+    #     # Extract and format the required entitlements as a list of strings
+    #     formatted_entitlements = [
+    #         f"Entity: {entitlement['entity']}, Level: {entitlement['level']}"
+    #         for entitlement in required_entitlements
+    #     ]
+        
+    #     # Join the formatted entitlements for display
+    #     entitlements_display = '<br>'.join(formatted_entitlements)
+        
+    #     # Create the error message
+    #     error_message = f"""
+    #     <div style="color: red; background-color: #fdd; padding: 10px; border-radius: 5px;">
+    #         You do not have access to this experiment.<br>You are required to be part of one of following entitlement/group:<br>{entitlements_display}
+    #     </div>
+    #     """
+        
+    #     # Display the error message
+    #     st.markdown(error_message, unsafe_allow_html=True)
+        # return
 
     st.title(f"Runs for Experiment: {experiment.get('name', 'Unknown')}")
     
@@ -167,6 +178,11 @@ def display_experiment_runs(api_client: APIClient, experiments_data: List[Dict],
     
     # Fetch completed runs for the selected experiment using the API client
     runs = api_client.get_completed_drift_runs(experiment_id, start_datetime, end_datetime, data_drift, concept_drift)
+
+    if isinstance(runs, dict) and 'error' in runs:
+        if runs["error"]:
+                st.error("You do not have permission to access this experiment.")
+                return
 
     if not runs:
         st.info("No runs available for this filter criteria.")
@@ -217,27 +233,24 @@ def main():
     else:
         user_entitlements = None
 
-     # Fetch the user data and get the user ID
-    user_data = api_client.fetch_json("user/self", {})  # Assuming user/self endpoint returns user info
+    #  # Fetch the user data and get the user ID
+    # user_data = api_client.fetch_json("user/self", {})  # Assuming user/self endpoint returns user info
     
-    if user_data:
-        user_id = user_data.get("id", "unknown_user_id")
-    else:
-        user_id = None
-    
-    
+    # if user_data:
+    #     user_id = user_data.get("id", "unknown_user_id")
+    # else:
+    #     user_id = None
+        
     # Create a PermissionManager instance for managing experiment permissions
-    permission_manager = PermissionManager(user_id=user_id, entitlements=user_entitlements, experiments=experiments_data)
+    # permission_manager = PermissionManager(user_id=user_id, entitlements=user_entitlements, experiments=experiments_data)
 
 
     # Allow the user to select which tab to display
-    selected_tab = st.sidebar.radio("Select Tab", ["Job Status", "Completed Jobs"])
+    selected_tab = st.sidebar.radio("Select Tab", ["Completed Jobs"])
     
     # Display the selected tab's content
-    if selected_tab == "Job Status":
-        display_uncompleted_jobs(api_client, experiments_data)
-    elif selected_tab == "Completed Jobs":        
-        display_completed_experiment(api_client, experiments_data, permission_manager)
+    if selected_tab == "Completed Jobs":        
+        display_completed_experiment(api_client, experiments_data)
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,15 @@
+{
+    "version": "0.1.0",
+    "configurations": [
+        {
+            "name": "debug streamlit",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/harsh/anaconda3/envs/cygnss_311/bin/streamlit", 
+            "args": [
+                "run",
+                "/home/harsh/Downloads/Adhoc/streamlit_tree/drift_detection_front_end/dashboard.py"
+            ]
+        }
+    ]
+    }
