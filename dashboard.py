@@ -11,8 +11,6 @@ from typing import List, Dict
 from app.ui_components import (    
     date_time_inputs,
     drift_type_inputs,    
-    build_tree_structure,
-    display_tree,
     display_selected_runs,
     display_experiment_table
 )
@@ -112,6 +110,7 @@ def display_completed_experiment(api_client: APIClient, experiments_data: List[D
         experiments_data (List[Dict]): A list of experiments to display.
         permission_manager (PermissionManager): Manages user permissions for accessing experiments.
     """
+    
     query_params = st.session_state.get("query_params", {})
     if "experiment_id" in query_params:
         # If an experiment is selected, display the runs associated with that experiment
@@ -199,20 +198,60 @@ def display_experiment_runs(api_client: APIClient, experiments_data: List[Dict],
         st.info("No runs found in the selected date and time range.")
         return
 
-    # Build a tree structure for displaying runs in a hierarchical format
-    tree_items, label_to_id_mapping = build_tree_structure(df, experiment.get('name', 'Name Unknown'))
-
+    checkbox_states = {}
+    
     with st.sidebar:
-        # Display the tree of experiment runs in the sidebar
-        selected_nodes = display_tree(tree_items)
+        # Create mapping of labels to run IDs first
+        label_to_id_mapping = {}
+        for _, row in df.iterrows():
+            run_label = f"Run - {row['created_at']}"
+            label_to_id_mapping[run_label] = row['id']
+
+        # Filter runs based on search if needed
+        search_query = st.text_input("Search Runs", "")
+        filtered_runs = {
+            label: run_id 
+            for label, run_id in label_to_id_mapping.items() 
+            if search_query.lower() in label.lower() or not search_query
+        }
+
+        # Initialize select_all in session state
+        if 'select_all' not in st.session_state:
+            st.session_state.select_all = False
+
+      
+        st.title("Select Options")
+        # Select All checkbox
+        select_all = st.checkbox("Select All", value=st.session_state.select_all)
+
+        # Handle select all changes
+        if select_all != st.session_state.select_all:
+            st.session_state.select_all = select_all
+            if select_all:
+                st.session_state.selected_runs = list(filtered_runs.values())
+            else:
+                st.session_state.selected_runs = []
+            st.rerun()
+
+
+        # Display filtered runs
+        for label, run_id in filtered_runs.items():
+            checkbox_states[run_id] = st.checkbox(label, key=f"run_{run_id}", 
+                       value=run_id in st.session_state.get('selected_runs', []))
+            
+        
 
     # Show a message if no runs exist for the selected criteria
-    if not tree_items:
+    if not checkbox_states:
         st.info("No runs exist for this filter.")
         return
 
+    # Get the selected checkboxes (True values)
+    selected_values = [checkbox_id for checkbox_id, checkbox in checkbox_states.items() if checkbox]
+
+    
     # Display the selected runs based on user choice
-    display_selected_runs(selected_nodes, df, label_to_id_mapping)
+    display_selected_runs(selected_values, df, label_to_id_mapping)
 
 def main():
     """

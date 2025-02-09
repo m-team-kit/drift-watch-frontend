@@ -58,34 +58,10 @@ def drift_type_inputs() -> List[str]:
     return data_drift, concept_drift
 
 
-def build_tree_structure(df: pd.DataFrame, experiment_name: str) -> Tuple[List[sac.TreeItem], Dict[str, str]]:
-    tree_items = []
-    label_to_id_mapping = {}
 
-    # Create a list of runs
-    run_items = []
-    for _, row in df.iterrows():
-        run_label = f"Run - {row['created_at']} - {experiment_name} "
-        label_to_id_mapping[run_label] = row['id']
-        run_items.append(
-            sac.TreeItem(
-                label=run_label
-            )
-        )
-
-    # Create the tree item for the experiment
-    experiment_label = f"{experiment_name}"
-    tree_items.append(
-        sac.TreeItem(
-            label=experiment_label,
-            icon='folder',
-            children=run_items
-        )
-    )
-
-    return tree_items, label_to_id_mapping
 
 def display_tree(tree_items: List[sac.TreeItem]) -> List[str]:
+    
     with st.expander("Drift Treeview", True):
         search_query = st.text_input("Search Runs", "")
         filtered_items = filter_tree_items(tree_items, search_query) if search_query else tree_items
@@ -108,12 +84,8 @@ def filter_tree_items(items: List[sac.TreeItem], query: str) -> List[sac.TreeIte
                 ))
     return filtered_items
 
-def display_selected_runs(selected_nodes: List[str], df: pd.DataFrame, label_to_id_mapping: Dict[str, str]):
-    if selected_nodes:
-        # Get the run IDs for the selected nodes using the mapping dictionary
-        selected_run_ids = [label_to_id_mapping.get(label) for label in selected_nodes if label in label_to_id_mapping]
-        # Filter out None values if any label wasn't found
-        selected_run_ids = [run_id for run_id in selected_run_ids if run_id is not None]
+def display_selected_runs(selected_run_ids: List[str], df: pd.DataFrame, label_to_id_mapping: Dict[str, str]):
+    if selected_run_ids:
 
         filtered_df = df[df['id'].isin(selected_run_ids)]
 
@@ -220,8 +192,10 @@ def display_experiment_table(experiments: List[Dict], api_client):
     if "current_page" not in st.session_state:
         st.session_state.current_page = 1
 
+    # Add input for items per page
+    items_per_page = st.number_input("Results per page", min_value=1, max_value=100, value=5, step=1)
+
     # Define pagination settings
-    items_per_page = 5
     total_pages = len(experiments) // items_per_page + (len(experiments) % items_per_page > 0)
 
     # Calculate start and end indices for the current page
@@ -300,4 +274,38 @@ def display_experiment_table(experiments: List[Dict], api_client):
             st.session_state.current_page += 1
             st.rerun()
 
+def display_runs_list(df: pd.DataFrame, experiment_name: str) -> List[str]:
+    st.subheader("Available Runs")
     
+    # Search functionality
+    search_query = st.text_input("Search Runs", "")
+    
+    # Create mapping of labels to IDs
+    label_to_id_mapping = build_list_structure(df, experiment_name)
+    
+    # Filter runs based on search
+    filtered_runs = {
+        label: run_id 
+        for label, run_id in label_to_id_mapping.items() 
+        if search_query.lower() in label.lower() or not search_query
+    }
+    
+    # Initialize session state for selected runs and select all
+    if 'selected_runs' not in st.session_state:
+        st.session_state.selected_runs = []
+    if 'select_all' not in st.session_state:
+        st.session_state.select_all = False
+    
+    # Select All checkbox
+    select_all = st.checkbox("Select All", value=st.session_state.select_all)
+    if select_all != st.session_state.select_all:
+        st.session_state.select_all = select_all
+        if select_all:
+            st.session_state.selected_runs = list(filtered_runs.values())
+        else:
+            st.session_state.selected_runs = []
+        st.rerun()
+    
+    selected_runs = []
+    
+    # Display runs with check
