@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from typing import List, Dict, Tuple
-from datetime import datetime, time
+from datetime import datetime
 
 def styled_button(label: str, key: str = None) -> bool:
     """
@@ -172,11 +172,7 @@ import pandas as pd
 from typing import List, Dict
 
 def display_experiment_table(experiments: List[Dict], api_client):
-    # Inject custom CSS for table borders
-    # Inject custom CSS for table borders
-
-    # Inject custom CSS for table borders with column separators
-    # Inject custom CSS for table borders with column separators
+    
     st.markdown("""
     <style>
     .table-container {
@@ -211,8 +207,7 @@ def display_experiment_table(experiments: List[Dict], api_client):
     </style>
     """, unsafe_allow_html=True)
 
-
-
+    
     st.markdown("<h2 style='text-align: left;'>Completed Jobs</h2>", unsafe_allow_html=True)
 
     # Search functionality
@@ -241,25 +236,24 @@ def display_experiment_table(experiments: List[Dict], api_client):
         with st.container():
             # Display table headers
             st.markdown('<div class="table-header">', unsafe_allow_html=True)
-            col1, col2, col3, col4 = st.columns([2, 4, 3, 1])
+            col1, col2, col3, col4 = st.columns([2, 3, 1, 1])
             with col1:
                 st.markdown("**Name**")
             with col2:
                 st.markdown("**Description**")
             with col3:
-                st.markdown("**Created At**")
+                st.markdown("**Created At**")            
             with col4:
-                st.markdown("**Select**")
+                st.markdown("**Public**")            
             st.markdown('</div>', unsafe_allow_html=True)
 
             # Display each experiment row
             for experiment in current_page_experiments:
                 st.markdown('<div class="table-row">', unsafe_allow_html=True)
-                row1, row2, row3, row4 = st.columns([2, 4, 3, 1])
+                row1, row2, row3, row4 = st.columns([2, 3, 1, 1])
 
                 # Name with clickable link
-                experiment_name = f"{experiment['name']}"
-                row1.markdown(experiment_name, unsafe_allow_html=True)
+                experiment_name = f"{experiment['name']}"                
 
                 # Description
                 row2.markdown(experiment.get('description', 'N/A'))
@@ -267,9 +261,12 @@ def display_experiment_table(experiments: List[Dict], api_client):
                 # Created At
                 row3.markdown(experiment.get('created_at', 'N/A'))
 
+                #public/private experiment
+                row4.markdown(str(experiment.get('public', 'N/A')))
+                
                 # Select Button
                 select_key = f"select_{experiment['id']}"
-                if row4.button("Select", key=select_key):
+                if row1.button(f"{experiment_name}", key=select_key):
                     st.session_state["query_params"] = {"experiment_id": experiment['id']}
                     st.rerun()
 
@@ -284,19 +281,23 @@ def display_experiment_table(experiments: List[Dict], api_client):
     else:
         st.warning("No experiments found")
 
+    st.markdown("<br><br>", unsafe_allow_html=True)  # Add line breaks to create spacing
+
+
     # Pagination controls
     col_prev, col_info, col_next = st.columns([1, 2, 1])
     with col_prev:
-        if st.button("Previous") and st.session_state.current_page > 1:
+        if st.button(label="Previous", use_container_width=True) and st.session_state.current_page > 1:
             st.session_state.current_page -= 1
             st.rerun()
+   
+    with col_info:
+        st.markdown(f"<p style='text-align: center; font-weight: bold;'>Page {st.session_state.current_page} of {total_pages}</p>", unsafe_allow_html=True)
+
+    
     with col_next:
-        if st.button("Next") and st.session_state.current_page < total_pages:
+        if st.button("Next", use_container_width=True) and st.session_state.current_page < total_pages:
             st.session_state.current_page += 1
             st.rerun()
 
-    # Display current page info in the center column
-    with col_info:
-        st.write(f"Page {st.session_state.current_page} of {total_pages}")
-        st.write(f"Showing {len(current_page_experiments)} items out of {len(experiments)} total.")
-
+    

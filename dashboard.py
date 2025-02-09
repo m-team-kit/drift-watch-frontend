@@ -219,7 +219,7 @@ def main():
     Main function for running the Streamlit application.
     
     Initializes the API client, fetches the data, and determines which tab is selected by the user.
-    Displays either the "Job Status" tab or the "Completed Jobs" tab.
+    Displays either the "Job Status" tab or the "All Experiments" tab.
     """
     # Initialize the API client with an authorization token
     api_client = initialize_api_client()
@@ -245,12 +245,7 @@ def main():
     # permission_manager = PermissionManager(user_id=user_id, entitlements=user_entitlements, experiments=experiments_data)
 
 
-    # Allow the user to select which tab to display
-    selected_tab = st.sidebar.radio("Select Tab", ["Completed Jobs"])
-    
-    # Display the selected tab's content
-    if selected_tab == "Completed Jobs":        
-        display_completed_experiment(api_client, experiments_data)
+    display_completed_experiment(api_client, experiments_data)
 
 if __name__ == "__main__":
     main()
