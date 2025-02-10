@@ -130,6 +130,14 @@ def display_experiment_runs(api_client: APIClient, experiments_data: List[Dict],
         experiment_id (str): The ID of the experiment for which to display runs.
         has_permission (bool): Whether the user has permission to access the experiment.
     """
+    
+    with st.sidebar:
+        with st.expander("Job type filters", expanded=True):
+            run_type = st.selectbox(
+            "Select Run Type",
+            ["Completed jobs", "Running jobs", "Failed jobs"]
+        )
+        
     # Display a button to go back to the experiments list
     if st.button("Back to Experiments List"):
         st.session_state.query_params = {}
@@ -177,7 +185,7 @@ def display_experiment_runs(api_client: APIClient, experiments_data: List[Dict],
     # Fetch completed runs for the selected experiment using the API client
     runs = api_client.get_completed_drift_runs(experiment_id, start_datetime, end_datetime)
 
-    tags_list = set(x for run in runs for x in run['tags'])
+    tags_list = set(tag for run in runs for tag in run['tags'])
     
     
     if isinstance(runs, dict) and 'error' in runs:
@@ -207,8 +215,22 @@ def display_experiment_runs(api_client: APIClient, experiments_data: List[Dict],
         return
 
     checkbox_states = {}
+
+      
     
     with st.sidebar:
+        
+ 
+
+        # Filter and sort df based on selections
+        if run_type == "Completed jobs":
+            df = df[df['job_status'] == 'Completed']
+        elif run_type == "Failed jobs":
+            df = df[df['job_status'] == 'Failed']
+        elif run_type == "Running jobs":
+            df = df[df['job_status'] == 'Running']
+
+        
         # Create mapping of labels to run IDs first
         label_to_id_mapping = {}
         for _, row in df.iterrows():
@@ -225,20 +247,27 @@ def display_experiment_runs(api_client: APIClient, experiments_data: List[Dict],
 
         # Initialize select_all in session state
         if 'select_all' not in st.session_state:
-            st.session_state.select_all = False
+            st.session_state.select_all = True
 
       
         st.title("Select Options")
         # Select All checkbox
         select_all = st.checkbox("Select All", value=st.session_state.select_all)
 
+            
+
+        # Filter df based on status before creating label_to_id_mapping
+        df = df[df['job_status'] == 'completed' if run_type == "Completed Runs" else df['job_status'] != 'completed']
+
+        if select_all:
+            st.session_state.selected_runs = list(filtered_runs.values())
+        else:
+            st.session_state.selected_runs = []
+        
         # Handle select all changes
         if select_all != st.session_state.select_all:
             st.session_state.select_all = select_all
-            if select_all:
-                st.session_state.selected_runs = list(filtered_runs.values())
-            else:
-                st.session_state.selected_runs = []
+           
             st.rerun()
 
 
