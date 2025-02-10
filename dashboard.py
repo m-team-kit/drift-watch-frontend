@@ -10,7 +10,7 @@ from app.api_client import APIClient
 from typing import List, Dict
 from app.ui_components import (    
     date_time_inputs,
-    drift_type_inputs,    
+    tags_type_inputs,    
     display_selected_runs,
     display_experiment_table
 )
@@ -172,12 +172,14 @@ def display_experiment_runs(api_client: APIClient, experiments_data: List[Dict],
     start_datetime, end_datetime = date_time_inputs()
 
     
-    data_drift, concept_drift = drift_type_inputs()
 
     
     # Fetch completed runs for the selected experiment using the API client
-    runs = api_client.get_completed_drift_runs(experiment_id, start_datetime, end_datetime, data_drift, concept_drift)
+    runs = api_client.get_completed_drift_runs(experiment_id, start_datetime, end_datetime)
 
+    tags_list = set(x for run in runs for x in run['tags'])
+    
+    
     if isinstance(runs, dict) and 'error' in runs:
         if runs["error"]:
                 st.error("You do not have permission to access this experiment.")
@@ -187,9 +189,15 @@ def display_experiment_runs(api_client: APIClient, experiments_data: List[Dict],
         st.info("No runs available for this filter criteria.")
         return
   
+    selected_tags = tags_type_inputs(tags_list)
     
     # Convert to DataFrame
     df = pd.DataFrame(runs)    
+    
+    
+    df = df[df['tags'].apply(lambda x: any(tag in selected_tags for tag in x))]
+
+
     df['created_at'] = pd.to_datetime(df['created_at']).dt.strftime("%Y-%m-%dT%H:%M:%S")
 
     

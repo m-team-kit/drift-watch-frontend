@@ -50,12 +50,12 @@ def date_time_inputs() -> Tuple:
             
     return start_datetime, end_datetime
 
-def drift_type_inputs() -> List[str]:
+def tags_type_inputs(tags_list: List) -> List[str]:
     with st.sidebar:
-        with st.expander("Drift Filters", True):
-            data_drift = st.checkbox("Feature Drift", value=True)
-            concept_drift = st.checkbox("Concept Drift", value=True)
-    return data_drift, concept_drift
+        with st.expander("Tags", True):
+            selected_tags = st.multiselect("Select Tags", tags_list, default=tags_list)
+            
+    return selected_tags
 
 
 

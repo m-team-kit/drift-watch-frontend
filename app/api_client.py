@@ -115,7 +115,7 @@ class APIClient:
 
 
     
-    def get_completed_drift_runs(self, experiment_id: str, start_datetime, end_datetime, data_drift=True, concept_drift=True):
+    def get_completed_drift_runs(self, experiment_id: str, start_datetime, end_datetime):
         """
         Fetches completed drift runs for a specific experiment.
 
@@ -128,20 +128,13 @@ class APIClient:
             dict or None: JSON response with completed runs.
         """
         
-        tags_to_check = []
-        
-        if concept_drift:
-            tags_to_check.append('concept_drift')
-            
-        if data_drift:
-            tags_to_check.append('data_drift')
         
         query_list = [
             queries.datetime(start=start_datetime, end=end_datetime),
             queries.job_status(status="Completed")
         ]
         
-        query_list.append(queries.tags_contains(tags=tags_to_check))
+       
                 
         endpoint = f"experiment/{experiment_id}/drift/search"        
         
