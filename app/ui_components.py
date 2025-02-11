@@ -129,19 +129,6 @@ def display_graphs(df: pd.DataFrame, drift_parameters_list: List[Dict], features
             st.warning("Please select at least one feature.")
     else:
         st.info("No drift parameters available to display.")
-from typing import List, Dict
-import pandas as pd
-import streamlit as st
-from typing import List, Dict
-import pandas as pd
-import streamlit as st
-
-import streamlit as st
-import pandas as pd
-from typing import List, Dict
-import streamlit as st
-import pandas as pd
-from typing import List, Dict
 
 def display_experiment_table(experiments: List[Dict], api_client):
     
@@ -179,6 +166,74 @@ def display_experiment_table(experiments: List[Dict], api_client):
     </style>
     """, unsafe_allow_html=True)
 
+    st.markdown("""
+    <style>
+    .table-container {
+        width: 100%;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    .table-header, .table-row {
+        display: grid;
+        grid-template-columns: 2fr 4fr 3fr 1fr;
+        width: 100%;
+        border-bottom: 1px solid #ddd;
+    }
+    .table-header div, .table-row div {
+        padding: 8px;
+        border-right: 1px solid #ddd;
+    }
+    .table-header {
+        background-color: #f2f2f2;
+        font-weight: bold;
+    }
+    .table-row:last-child {
+        border-bottom: none;
+    }
+    .table-header div:last-child, .table-row div:last-child {
+        border-right: none;
+    }
+    .table-row:hover {
+        background-color: #f9f9f9;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <style>
+    .table-container {
+        width: 100%;
+        border: 2px solid #ddd;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .table-header, .table-row {
+        display: grid;
+        grid-template-columns: 2fr 4fr 3fr 1fr;
+        width: 100%;
+        border-bottom: 1px solid #ddd;
+        border-left: 1px solid #ddd;
+    }
+    .table-header div, .table-row div {
+        padding: 8px;
+        border-right: 1px solid #ddd;
+        text-align: left;
+        position: relative;
+        background: inherit;
+    }
+    .table-header {
+        background-color: #f2f2f2;
+        font-weight: bold;
+        border-bottom: 2px solid #ddd;
+    }
+    .table-row:last-child {
+        border-bottom: none;
+    }
+    .table-row:hover {
+        background-color: #f9f9f9;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
     st.markdown("<h2 style='text-align: left;'>Completed Jobs</h2>", unsafe_allow_html=True)
 
@@ -241,16 +296,21 @@ def display_experiment_table(experiments: List[Dict], api_client):
                 # Select Button
                 select_key = f"select_{experiment['id']}"
                 if row1.button(f"{experiment_name}", key=select_key):
+                    
+                    # st.query_params['experiment_id'] = experiment['id']
+                    
+
                     st.session_state["query_params"] = {"experiment_id": experiment['id']}
-                    st.rerun()
+
+                    st.switch_page("pages/experiment_run.py")
 
                 st.markdown('</div>', unsafe_allow_html=True)
 
-        # Optional: Display selected experiment
-        query_params = st.session_state.get("query_params", {})
-        if "experiment_id" in query_params:
-            experiment_id = query_params["experiment_id"]
-            st.success(f"Selected Experiment ID: {experiment_id}")
+        # # Optional: Display selected experiment
+        # query_params = st.session_state.get("query_params", {})
+        # if "experiment_id" in query_params:
+        #     experiment_id = query_params["experiment_id"]
+        #     st.success(f"Selected Experiment ID: {experiment_id}")
            
     else:
         st.warning("No experiments found")
@@ -273,39 +333,3 @@ def display_experiment_table(experiments: List[Dict], api_client):
         if st.button("Next", use_container_width=True) and st.session_state.current_page < total_pages:
             st.session_state.current_page += 1
             st.rerun()
-
-def display_runs_list(df: pd.DataFrame, experiment_name: str) -> List[str]:
-    st.subheader("Available Runs")
-    
-    # Search functionality
-    search_query = st.text_input("Search Runs", "")
-    
-    # Create mapping of labels to IDs
-    label_to_id_mapping = build_list_structure(df, experiment_name)
-    
-    # Filter runs based on search
-    filtered_runs = {
-        label: run_id 
-        for label, run_id in label_to_id_mapping.items() 
-        if search_query.lower() in label.lower() or not search_query
-    }
-    
-    # Initialize session state for selected runs and select all
-    if 'selected_runs' not in st.session_state:
-        st.session_state.selected_runs = []
-    if 'select_all' not in st.session_state:
-        st.session_state.select_all = False
-    
-    # Select All checkbox
-    select_all = st.checkbox("Select All", value=st.session_state.select_all)
-    if select_all != st.session_state.select_all:
-        st.session_state.select_all = select_all
-        if select_all:
-            st.session_state.selected_runs = list(filtered_runs.values())
-        else:
-            st.session_state.selected_runs = []
-        st.rerun()
-    
-    selected_runs = []
-    
-    # Display runs with check

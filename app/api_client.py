@@ -95,6 +95,17 @@ class APIClient:
         }]
         return self.fetch_json_via_post("experiment/search", query_list)
 
+
+
+    def get_experiment(self, experiment_id):
+        """Fetches a particular experiment."""
+        
+        query_list = [
+            queries.experiment_id(experiment_id)
+        ]
+
+        return self.fetch_json_via_post("experiment/search", query_list)
+    
     def get_uncompleted_drift_runs(self, experiment_id: str, start_datetime, end_datetime):
         """
         Fetches uncompleted drift runs for a specific experiment.
@@ -115,9 +126,9 @@ class APIClient:
 
 
     
-    def get_completed_drift_runs(self, experiment_id: str, start_datetime, end_datetime):
+    def get_drift_runs(self, experiment_id: str, start_datetime, end_datetime, status: str=None):
         """
-        Fetches completed drift runs for a specific experiment.
+        Fetches drift runs for a specific experiment according to the status.
 
         Args:
             experiment_id (str): The experiment ID.
@@ -131,7 +142,7 @@ class APIClient:
         
         query_list = [
             queries.datetime(start=start_datetime, end=end_datetime),
-            queries.job_status(status="Completed")
+            queries.job_status(status=status)
         ]
         
        

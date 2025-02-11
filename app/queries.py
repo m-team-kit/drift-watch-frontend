@@ -18,3 +18,8 @@ def tags_contains(tags=None):
     if not isinstance(tags, list):
         return {"tags" : {"$in": tags}}
     return {"tags" : tags} 
+
+
+def experiment_id(experiment_id=None):
+    """Construct the query to find experiment coressponding to the experiment_id."""
+    return {"id" : f"{experiment_id}"} 
