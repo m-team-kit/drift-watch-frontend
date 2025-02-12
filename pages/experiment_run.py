@@ -1,6 +1,5 @@
 import streamlit as st
 from app.api_client import APIClient
-from experiments import display_experiment_runs
 from app.ui_components import (    
     date_time_inputs,
     tags_type_inputs,    
